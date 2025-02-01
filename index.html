@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Serás mi Valentín?</title>
+  <style>
+    /* Reset básico */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+
+    /* Contenedores para los mensajes de "TE AMOO..." */
+    .mensajeFoto {
+      position: fixed;
+      top: 20%;
+      font-size: 2em;
+      font-weight: bold;
+      color: #333;
+      z-index: 999;
+    }
+    #mensajeFotoLeft {
+      left: 5%;
+    }
+    #mensajeFotoRight {
+      right: 5%;
+    }
+
+    /* Contenedores de pantalla */
+    .screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 1s ease, visibility 1s ease;
+      opacity: 0;
+      visibility: hidden;
+    }
+    .screen.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ================================
+       PANTALLA 1: INICIO
+       ================================ */
+    #screen1 {
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      overflow: hidden;
+      position: relative;
+    }
+    /* Contenedor de corazones cayendo */
+    #heartsContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .heart-fall {
+      position: absolute;
+      top: -50px;
+      color: rgba(255, 0, 0, 0.85);
+      font-size: 24px;
+      animation: fall linear infinite;
+    }
+    @keyframes fall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(110vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+    /* Contenedor de flores cayendo (emoji 🌸) */
+    #flowersContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .flower-fall {
+      position: absolute;
+      top: -50px;
+      font-size: 24px;
+      opacity: 0.9;
+      animation: flowerFall linear infinite;
+    }
+    @keyframes flowerFall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(110vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+    /* Imagen central: se reemplaza el SVG por la imagen del corazón y se aumenta 4 veces */
+    .heart-image {
+      width: 720px; /* 180px * 4 */
+      height: auto;
+      margin-bottom: 20px;
+      z-index: 3;
+    }
+    /* Flores laterales en movimiento - 3 veces su tamaño original */
+    .side-flowers {
+      position: absolute;
+      bottom: 10px;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .side-flowers.left,
+    .side-flowers.right {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .side-flowers.left {
+      left: 10px;
+    }
+    .side-flowers.right {
+      right: 10px;
+    }
+    .side-flower {
+      width: 450px; /* 150px * 3 */
+      height: 450px; /* 150px * 3 */
+      animation: sideMove 4s ease-in-out infinite;
+    }
+    @keyframes sideMove {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-10px) rotate(10deg);
+      }
+    }
+    /* Texto principal minimalista */
+    #screen1 h1 {
+      font-size: 2.2em;
+      color: #333;
+      margin-bottom: 20px;
+      z-index: 3;
+      text-align: center;
+      padding: 0 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+    /* Botones */
+    .buttons {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      z-index: 3;
+      justify-content: center;
+    }
+    .btn {
+      padding: 15px 30px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.3s, background 0.3s;
+    }
+    /* Efecto de aumento al pasar el cursor (para ambos botones) */
+    .btn:hover {
+      transform: scale(1.1);
+    }
+    .btn-yes {
+      background: #d6336c;
+      color: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    /* Inicialmente el botón "No" se muestra en línea con el botón "Sí" */
+    .btn-no {
+      background: #fff;
+      color: #d6336c;
+      border: 2px solid #d6336c;
+    }
+
+    /* ================================
+       PANTALLA 2: CONTENIDO ROMÁNTICO Y POEMAS
+       ================================ */
+    #screen2 {
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      padding: 20px;
+      overflow-y: auto;
+      position: relative;
+    }
+    /* Contenedor de corazones flotantes en pantalla 2 */
+    #heartsFloat {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .heart-float {
+      position: absolute;
+      bottom: -50px;
+      color: rgba(255, 0, 0, 0.85);
+      font-size: 24px;
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-110vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+    /* Contenedor de emojis de amor cayendo en pantalla 2 */
+    #loveEmojisContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .love-emoji {
+      position: absolute;
+      top: -50px;
+      animation: fall linear infinite;
+    }
+    /* Flores floreciendo con brillo en pantalla 2 - ubicadas en la parte inferior y 4 veces su tamaño original */
+    .blooming-flowers {
+      position: absolute;
+      bottom: 20px;
+      z-index: 3;
+      display: flex;
+      gap: 20px;
+    }
+    .blooming-flowers.left {
+      left: 20px;
+      flex-direction: column;
+    }
+    .blooming-flowers.right {
+      right: 20px;
+      flex-direction: column;
+    }
+    .blooming-flower {
+      width: 600px;
+      height: 600px;
+      opacity: 0;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+      animation: bloom 2s forwards;
+    }
+    @keyframes bloom {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      80% {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    /* Grupo de fotos (tres redondas) */
+    .photos-group {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .photo-container {
+      width: 300px;
+      height: 300px;
+      border: 10px solid #fff;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      animation: popIn 1s ease forwards;
+      background: #fff;
+    }
+    /* Fondo especial para foto adicional */
+    .photo-container.secondary {
+      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, transparent 70%);
+    }
+    @keyframes popIn {
+      from {
+        transform: scale(1);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+    .photo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s, filter 0.3s;
+      cursor: pointer;
+    }
+    .photo-container img:hover {
+      transform: scale(1.05);
+      filter: brightness(1.2);
+    }
+    /* Textos en pantalla 2 minimalistas */
+    #screen2 h2 {
+      font-size: 2.5em;
+      color: #333;
+      margin-top: 20px;
+      animation: fadeIn 1.5s ease forwards;
+      text-align: center;
+    }
+    /* Se redujo el tamaño del título principal en pantalla 2 (antes 46px, ahora 36px) */
+    #screen2 h1 {
+      font-size: 36px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    #screen2 p {
+      font-size: 1.5em;
+      color: #333;
+      margin-top: 10px;
+      animation: fadeIn 1.5s ease forwards;
+      animation-delay: 0.3s;
+      text-align: center;
+      max-width: 90%;
+      line-height: 1.4;
+    }
+    .subtitle {
+      font-size: 2em;
+      color: #333;
+      margin-top: 30px;
+      text-align: center;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    /* Contenedor de imágenes extra (redondas) */
+    .extra-images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .extra-images img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border: 5px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      animation: popIn 1s ease forwards;
+      cursor: pointer;
+    }
+
+    /* ================================
+       MEDIA QUERIES PARA MÓVIL
+       ================================ */
+    @media (max-width: 480px) {
+      .heart-image {
+        width: 120px;
+      }
+      #screen1 h1 {
+        font-size: 1.8em;
+        padding: 0 10px;
+      }
+      .btn {
+        padding: 10px 20px;
+        font-size: 1em;
+      }
+      .side-flower {
+        width: 80px;
+        height: 80px;
+      }
+      .photo-container {
+        width: 250px;
+        height: 250px;
+        border-width: 5px;
+      }
+      #screen2 h2 {
+        font-size: 2em;
+      }
+      #screen2 p {
+        font-size: 1.2em;
+      }
+      .photos-group {
+        gap: 10px;
+      }
+      .extra-images img {
+        width: 100px;
+        height: 100px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Contenedores para los mensajes de "TE AMOO..." -->
+  <div id="mensajeFotoLeft" class="mensajeFoto"></div>
+  <div id="mensajeFotoRight" class="mensajeFoto"></div>
+
+  <!-- ================================
+       PANTALLA 1: PREGUNTA INICIAL
+       ================================ -->
+  <div id="screen1" class="screen active">
+    <!-- Contenedor de corazones cayendo -->
+    <div id="heartsContainer"></div>
+    <!-- Contenedor de flores cayendo -->
+    <div id="flowersContainer"></div>
+
+    <!-- Imagen central (corazón) aumentada -->
+    <img class="heart-image" src="https://i.ibb.co/cckHhtfN/png-transparent-heart-background-made-with-hearts-removebg-preview.png" alt="Heart">
+
+    <!-- Contenedores laterales de flores en movimiento -->
+    <div class="side-flowers left">
+      <img src="https://i.ibb.co/xqKd2S6c/2148763959-removebg-derecha.png" alt="Flor" class="side-flower">
+    </div>
+    <div class="side-flowers right">
+      <img src="https://i.ibb.co/yFBWLySZ/2148763959-removebg-izquierda.png" alt="Flor" class="side-flower">
+    </div>
+
+    <!-- Texto de la pregunta -->
+    <h1>¿Me harías el honor de ser mi Valentín?</h1>
+    <div class="buttons">
+      <button class="btn btn-yes" onclick="nextScreen()">¡Sí, claro que sí!</button>
+      <button class="btn btn-no" onclick="moveNo()">No, mejor no</button>
+    </div>
+  </div>
+
+  <!-- ================================
+       PANTALLA 2: CONTENIDO ROMÁNTICO Y POEMAS
+       ================================ -->
+  <div id="screen2" class="screen">
+    <!-- Contenedor de emojis de amor cayendo -->
+    <div id="loveEmojisContainer"></div>
+    <h1>Mi Amooooor ❤️</h1>
+    <!-- Flores floreciendo con brillo (ubicadas en la parte inferior) -->
+    <div class="blooming-flowers left">
+      <img src="https://i.ibb.co/xqKd2S6c/2148763959-removebg-derecha.png" alt="Flor" class="blooming-flower" style="animation-delay:0.3s;">
+    </div>
+    <div class="blooming-flowers right">
+      <img src="https://i.ibb.co/yFBWLySZ/2148763959-removebg-izquierda.png" alt="Flor" class="blooming-flower" style="animation-delay:0.3s;">
+    </div>
+
+    <!-- Contenedor de corazones flotantes -->
+    <div id="heartsFloat"></div>
+
+    <!-- Grupo de fotos: principal y adicional (tres redondas) -->
+    <div class="photos-group">
+      <div class="photo-container">
+        <img src="https://i.ibb.co/RpL5mvNw/Whats-App-Image-2025-02-01-at-10-32-40.jpg" alt="Foto de Rashel">
+      </div>
+      <div class="photo-container secondary">
+        <img src="https://i.ibb.co/RTP9B57Q/832bb132-a5cb-4e0a-b905-386c7f790359.jpg" alt="Foto adicional">
+      </div>
+      <div class="photo-container secondary">
+        <img src="https://i.ibb.co/zWZvVgpT/404717353-337830225760254-1422121499958933110-n.jpg" alt="Foto adicional">
+      </div>
+    </div>
+
+    <!-- Textos y poemas minimalistas -->
+    <h2>¡Sabía que dirías que sii!❤️❤️❤️</h2>
+    <p>Mi amor estoy muy orgullo de ti, mi todo, cada día me sorprendo de lo que has logrado y del ánimo que pones en cada</p>
+    <p>cosa, jamás olvidé que mis sentimientos están contigo y será así por mucho tiempo, mientras yo esté contigo no te hará falta</p>
+    <p>alguien con quien hablar, reír, llorar, amar todo lo que necesites❤️</p>
+    <p>Eres mis ojoss lindoss, cada conversación créeme que me hace amarte como nunca y nunca dejaré de querer hablar contigo.</p>
+    <p>Eres y siempre serás ese amor tan bonito que quise en mi vida y ahora tú eres mi vida.❤️</p>
+    <p>Eres esa persona especial con quien reír, llorar y amar, y cada conversación me hace amarte más.</p>
+    <p>Eres y siempre serás ese amor tan bonito que soñé, y ahora, tú eres mi vida.</p>
+
+    <div class="subtitle">Mi mami linda, mi vida ❤️</div>
+    <p>"Entre cada conversa y sonrisa, descubro que mi universo está en tus ojos.❤️"</p>
+    <p>"Tu presencia y tu amor me llenan completamente y hacen latir mi corazón mucho más de lo que te imaginas.❤️"</p>
+    <p>"A tu lado, cada instante se transforma en un poema de amor infinito.❤️"</p>
+    <p>"Por ti nace todo: quiero todo por ti y solo contigo. Si pudiera, te entregaría mi corazón en las manos, porque es tuyo.❤️"</p>
+
+    <!-- Imágenes adicionales (redondas) -->
+    <div class="extra-images">
+      <img src="https://i.ibb.co/6zkyqtX/Whats-App-Image-2025-02-01-at-10-32-40.jpg" alt="Amor">
+      <img src="https://i.ibb.co/gZ40HBnq/404296889-1548010765767255-825443521463372413-n.jpg" alt="Alegría">
+      <img src="https://i.ibb.co/pBSKmsjL/Whats-App-Image-2025-02-01-at-10-32-40-1.jpg" alt="Pasión">
+    </div>
+  </div>
+
+  <script>
+    /* ---------------------------
+       FUNCIONES Y ANIMACIONES
+       --------------------------- */
+    // Crear corazones cayendo en pantalla 1
+    function createFallingHearts() {
+      const container = document.getElementById('heartsContainer');
+      for (let i = 0; i < 30; i++) {
+        const heart = document.createElement('div');
+        heart.classList.add('heart-fall');
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = (Math.random() * 3 + 4) + 's';
+        heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+        heart.textContent = '❤️';
+        container.appendChild(heart);
+      }
+    }
+    createFallingHearts();
+
+    // Crear flores cayendo en pantalla 1
+    function createFallingFlowers() {
+      const container = document.getElementById('flowersContainer');
+      for (let i = 0; i < 20; i++) {
+        const flower = document.createElement('div');
+        flower.classList.add('flower-fall');
+        flower.style.left = Math.random() * 100 + 'vw';
+        flower.style.animationDuration = (Math.random() * 3 + 4) + 's';
+        flower.style.fontSize = (Math.random() * 20 + 20) + 'px';
+        flower.textContent = '🌸';
+        container.appendChild(flower);
+      }
+    }
+    createFallingFlowers();
+
+    // Crear corazones flotantes en pantalla 2
+    function createFloatingHearts() {
+      const container = document.getElementById('heartsFloat');
+      for (let i = 0; i < 25; i++) {
+        const heart = document.createElement('div');
+        heart.classList.add('heart-float');
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.animationDuration = (Math.random() * 3 + 4) + 's';
+        heart.style.fontSize = (Math.random() * 20 + 20) + 'px';
+        heart.textContent = '❤️';
+        container.appendChild(heart);
+      }
+    }
+    // Se crearán al entrar a pantalla 2
+
+    // Crear emojis de amor cayendo en pantalla 2
+    function createFallingLoveEmojis() {
+      const container = document.getElementById('loveEmojisContainer');
+      for (let i = 0; i < 20; i++) {
+        const emoji = document.createElement('div');
+        emoji.classList.add('love-emoji');
+        emoji.style.left = Math.random() * 100 + 'vw';
+        emoji.style.animationDuration = (Math.random() * 3 + 4) + 's';
+        emoji.style.fontSize = (Math.random() * 20 + 20) + 'px';
+        emoji.textContent = '💖';
+        container.appendChild(emoji);
+      }
+    }
+
+    // Función para pasar de la pantalla 1 a la pantalla 2
+    function nextScreen() {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      document.getElementById('screen1').classList.remove('active');
+      setTimeout(() => {
+        document.getElementById('screen1').style.display = 'none';
+        document.getElementById('screen2').classList.add('active');
+        createFloatingHearts();
+        createFallingLoveEmojis();
+      }, 1000);
+    }
+
+    // Función para el botón "No": se reposiciona aleatoriamente en toda la pantalla
+    function moveNo() {
+      const btnNo = document.querySelector('.btn-no');
+      // Si no es fixed aún, lo cambiamos para que se pueda mover libremente
+      if (getComputedStyle(btnNo).position !== "fixed") {
+        btnNo.style.position = "fixed";
+      }
+      const maxX = window.innerWidth - btnNo.offsetWidth;
+      const maxY = window.innerHeight - btnNo.offsetHeight;
+      const randomX = Math.random() * maxX;
+      const randomY = Math.random() * maxY;
+      btnNo.style.left = randomX + 'px';
+      btnNo.style.top = randomY + 'px';
+    }
+
+    // Arreglo de mensajes
+    const mensajes = [
+      '❤️ TE AMOO MAMI ❤️',
+      '❤️ TE AMOO TANTO ❤️',
+      '❤️ TE AMOOO MUCHO CON BASTANTE ❤️',
+      '❤️ TE AMOO AMOOOORRR ❤️',
+      '❤️ MI PEQUEÑA ❤️',
+      '❤️ MI NEGRITA ❤️',
+      '❤️ MI MORENITA ❤️',
+      '❤️ TE AMOOO MI LOBAA ❤️'
+    ];
+
+    // Función para agregar un mensaje en el contenedor correspondiente
+    function agregarMensaje(mensaje, contenedor) {
+      const mensajeEl = document.createElement('div');
+      mensajeEl.innerText = mensaje;
+      mensajeEl.style.marginBottom = '5px';
+      contenedor.appendChild(mensajeEl);
+      if (contenedor.children.length >= 25) {
+        contenedor.innerHTML = '';
+      }
+      setTimeout(() => {
+        if (mensajeEl.parentNode === contenedor) {
+          contenedor.removeChild(mensajeEl);
+        }
+      }, 15000);
+    }
+
+    // Seleccionar todas las imágenes dentro de .photo-container y .extra-images
+    const fotos = document.querySelectorAll('.photo-container img, .extra-images img');
+    fotos.forEach(foto => {
+      foto.addEventListener('click', () => {
+        if (Math.random() < 0.5) {
+          agregarMensaje(mensajes[Math.floor(Math.random() * mensajes.length)], document.getElementById('mensajeFotoLeft'));
+        } else {
+          agregarMensaje(mensajes[Math.floor(Math.random() * mensajes.length)], document.getElementById('mensajeFotoRight'));
+        }
+      });
+    });
+  </script>
+</body>
+</html>
